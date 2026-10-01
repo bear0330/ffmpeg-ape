@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+
+: "${COSMOS_X86_64:?}" "${COSMOS_AARCH64:?}" "${COSMOCC:?}" "${RESULTS:?}"
+test "$#" -gt 0 || { echo "usage: $0 executable [...]" >&2; exit 2; }
+
+APELINK="$COSMOCC/bin/apelink"
+APE_X86="$COSMOCC/bin/ape-x86_64.elf"
+APE_ARM="$COSMOCC/bin/ape-aarch64.elf"
+APE_M1="$COSMOCC/bin/ape-m1.c"
+test -f "$APELINK" && test -f "$APE_X86" && test -f "$APE_ARM" && test -f "$APE_M1" || {
+    echo "incomplete cosmocc APE packaging tools" >&2
+    exit 1
+}
+
+mkdir -p "$RESULTS/bin"
+for exe in "$@"; do
+    x86="$COSMOS_X86_64/bin/$exe"
+    arm="$COSMOS_AARCH64/bin/$exe"
+    test -f "$x86" || { echo "missing x86_64 launcher: $x86" >&2; exit 1; }
+    test -f "$arm" || { echo "missing aarch64 launcher: $arm" >&2; exit 1; }
+    cp -f "$x86" "$RESULTS/bin/$exe.x86_64"
+    cp -f "$arm" "$RESULTS/bin/$exe.aarch64"
+    chmod +x "$RESULTS/bin/$exe.x86_64" "$RESULTS/bin/$exe.aarch64"
+    "$APELINK" -l "$APE_X86" -l "$APE_ARM" -M "$APE_M1" \
+        -o "$RESULTS/bin/$exe.com" "$RESULTS/bin/$exe.x86_64" "$RESULTS/bin/$exe.aarch64"
+    chmod +x "$RESULTS/bin/$exe.com"
+done

@@ -1,0 +1,77 @@
+diff -ruN FFmpeg-n9.0.1/configure FFmpeg-n9.0.1/configure
+--- FFmpeg-n9.0.1/configure
++++ FFmpeg-n9.0.1/configure
+@@ -7008,7 +7008,7 @@
+ check_struct "sys/stat.h" "struct stat" st_mtim.tv_nsec -D_BSD_SOURCE
+ check_func  strerror_r
+ check_func  sysconf
+-check_func  sysctl
++check_func_headers sys/sysctl.h sysctl
+ check_func  tempnam
+ check_func  usleep
+ 
+@@ -7962,3 +7962,2 @@
+ check_c_warning -Wmissing-prototypes
+ check_c_warning -Wstrict-prototypes
+-check_c_warning -Wunterminated-string-initialization
+
+diff -ruN FFmpeg-n9.0.1/libavcodec/apv_parser.c FFmpeg-n9.0.1/libavcodec/apv_parser.c
+--- FFmpeg-n9.0.1/libavcodec/apv_parser.c
++++ FFmpeg-n9.0.1/libavcodec/apv_parser.c
+@@ -194,7 +194,7 @@
+     return 0;
+ }
+ 
+-static av_cold void close(AVCodecParserContext *s)
++static av_cold void apv_parser_close(AVCodecParserContext *s)
+ {
+     APVParseContext *p = s->priv_data;
+     ParseContext *pc = &p->pc;
+@@ -209,5 +209,5 @@
+     .priv_data_size = sizeof(APVParseContext),
+     .init           = init,
+     .parse          = parse,
+-    .close          = close,
++    .close          = apv_parser_close,
+ };
+diff -ruN FFmpeg-n9.0.1/libavformat/srtdec.c FFmpeg-n9.0.1/libavformat/srtdec.c
+--- FFmpeg-n9.0.1/libavformat/srtdec.c
++++ FFmpeg-n9.0.1/libavformat/srtdec.c
+@@ -24,6 +24,7 @@
+ #include "demux.h"
+ #include "internal.h"
+ #include "subtitles.h"
++#include "libavutil/avstring.h"
+ #include "libavutil/bprint.h"
+ #include "libavutil/intreadwrite.h"
+ 
+@@ -57,7 +58,7 @@
+     if (buf[0] == '-')
+         pbuf++;
+     if (pbuf[0] >= '0' && pbuf[0] <= '9' && strstr(buf, " --> ")
+-        && sscanf(buf, "%*d:%*d:%*d%*1[,.]%*d --> %*d:%*d:%*d%*1[,.]%d", &v) == 1)
++        && av_sscanf(buf, "%*d:%*d:%*d%*1[,.]%*d --> %*d:%*d:%*d%*1[,.]%d", &v) == 1)
+         return AVPROBE_SCORE_MAX;
+ 
+     return 0;
+@@ -78,7 +79,7 @@
+     ei->x1 = ei->x2 = ei->y1 = ei->y2 = ei->duration = -1;
+     ei->pts = AV_NOPTS_VALUE;
+     ei->pos = -1;
+-    if (sscanf(line, "%d:%d:%d%*1[,.]%d --> %d:%d:%d%*1[,.]%d"
++    if (av_sscanf(line, "%d:%d:%d%*1[,.]%d --> %d:%d:%d%*1[,.]%d"
+                "%*[ ]X1:%"PRId32" X2:%"PRId32" Y1:%"PRId32" Y2:%"PRId32,
+                &hh1, &mm1, &ss1, &ms1,
+                &hh2, &mm2, &ss2, &ms2,
+diff -ruN FFmpeg-n9.0.1/libavutil/error.h FFmpeg-n9.0.1/libavutil/error.h
+--- FFmpeg-n9.0.1/libavutil/error.h
++++ FFmpeg-n9.0.1/libavutil/error.h
+@@ -37,7 +37,7 @@
+ 
+ 
+ /* error handling */
+-#if EDOM > 0
++#if defined(__COSMOPOLITAN__) || EDOM > 0
+ #define AVERROR(e) (-(e))   ///< Returns a negative error code from a POSIX error code, to return from library functions.
+ #define AVUNERROR(e) (-(e)) ///< Returns a POSIX error code from a library function error return value.
+ #else

@@ -1,0 +1,52 @@
+#!/bin/sh
+# Provision the pinned Meson source tree used to configure dav1d.
+set -eu
+: "${BASELOC:?BASELOC must be exported by superconfigure}"
+
+VERSION=1.12.0
+ARCHIVE="$BASELOC/distfiles/meson-$VERSION.tar.gz"
+URL="https://github.com/mesonbuild/meson/archive/refs/tags/$VERSION.tar.gz"
+SHA256=88afe0c20e52030218924ac37d0c81c59b4b5f3ae3752c8c6d7470c7d365886c
+TOOL="$BASELOC/build-tools/meson-$VERSION"
+LOCK="$TOOL.lock"
+
+checksum() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    printf '%s  %s\n' "$SHA256" "$ARCHIVE" | sha256sum -c -
+  else
+    printf '%s  %s\n' "$SHA256" "$ARCHIVE" | shasum -a 256 -c -
+  fi
+}
+
+if [ ! -f "$ARCHIVE" ]; then
+  mkdir -p "$(dirname "$ARCHIVE")"
+  tmp="$ARCHIVE.tmp.$$"
+  trap 'rm -f "$tmp"' EXIT HUP INT TERM
+  if command -v curl >/dev/null 2>&1; then
+    curl -fL --retry 3 -o "$tmp" "$URL"
+  else
+    wget -O "$tmp" "$URL"
+  fi
+  mv "$tmp" "$ARCHIVE"
+  trap - EXIT HUP INT TERM
+fi
+checksum
+
+if [ -f "$TOOL/meson.py" ]; then
+  exit 0
+fi
+
+while ! mkdir "$LOCK" 2>/dev/null; do
+  test -f "$TOOL/meson.py" && exit 0
+  sleep 1
+done
+trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT HUP INT TERM
+if [ ! -f "$TOOL/meson.py" ]; then
+  stage=$(mktemp -d "$BASELOC/build-tools/.meson.XXXXXX")
+  trap 'rm -rf "$stage"; rmdir "$LOCK" 2>/dev/null || true' EXIT HUP INT TERM
+  tar xzf "$ARCHIVE" -C "$stage"
+  test -f "$stage/meson-$VERSION/meson.py"
+  rm -rf "$TOOL"
+  mv "$stage/meson-$VERSION" "$TOOL"
+  rmdir "$stage"
+fi

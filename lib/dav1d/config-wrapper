@@ -1,0 +1,65 @@
+#!/bin/sh
+set -eu
+
+MESON="$BASELOC/build-tools/meson-1.12.0/meson.py"
+SRC=$(find "$BASELOC/o/lib/dav1d" -mindepth 1 -maxdepth 1 -type d -name 'dav1d-*' | head -n1)
+CROSS="$PWD/cosmo-cross.ini"
+CCWRAP="$PWD/cosmo-cc-wrapper"
+
+cat > "$CCWRAP" <<EOW
+#!/bin/bash
+set -e
+real_cc='$CC'
+args=()
+while ((\$#)); do
+  if [[ "\$1" == -MQ && \$# -ge 2 ]]; then
+    args+=("-MQ\$2")
+    shift 2
+  else
+    args+=("\$1")
+    shift
+  fi
+done
+exec "\$real_cc" "\${args[@]}"
+EOW
+chmod +x "$CCWRAP"
+
+case "$ARCH" in
+  x86_64) CPU_FAMILY=x86_64; CPU=x86_64 ;;
+  aarch64) CPU_FAMILY=aarch64; CPU=aarch64 ;;
+  *) echo "unsupported ARCH=$ARCH" >&2; exit 1 ;;
+esac
+
+cat > "$CROSS" <<EOC
+[binaries]
+c = '$CCWRAP'
+ar = ['/bin/sh', '$AR']
+strip = ['/bin/sh', '$STRIP']
+pkg-config = 'pkg-config'
+
+[host_machine]
+system = 'linux'
+cpu_family = '$CPU_FAMILY'
+cpu = '$CPU'
+endian = 'little'
+
+[properties]
+needs_exe_wrapper = true
+
+[built-in options]
+c_args = ['-I$COSMOS/include']
+c_link_args = ['-L$COSMOS/lib']
+EOC
+
+exec python3 "$MESON" setup "$PWD" "$SRC" \
+  --cross-file "$CROSS" \
+  --prefix "$COSMOS" \
+  --libdir lib \
+  --includedir include \
+  --buildtype release \
+  --default-library static \
+  -Denable_asm=false \
+  -Denable_tools=false \
+  -Denable_examples=false \
+  -Denable_tests=false \
+  -Denable_docs=false

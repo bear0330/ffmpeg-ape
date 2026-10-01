@@ -1,0 +1,12 @@
+diff -ruN dav1d-1.5.4/include/dav1d/common.h dav1d-1.5.4/include/dav1d/common.h
+--- dav1d-1.5.4/include/dav1d/common.h
++++ dav1d-1.5.4/include/dav1d/common.h
+@@ -54,7 +54,7 @@
+     #endif
+ #endif
+ 
+-#if EPERM > 0
++#if defined(__COSMOPOLITAN__) || EPERM > 0
+ #define DAV1D_ERR(e) (-(e)) ///< Negate POSIX error code.
+ #else
+ #define DAV1D_ERR(e) (e)

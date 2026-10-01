@@ -1,0 +1,8 @@
+# The released base framework on which this overlay is applied.
+superconfigure_repository=https://github.com/ahgamut/superconfigure.git
+superconfigure_ref=z0.0.66
+superconfigure_commit=29009f53a141be8113e7f5729a0a007f1081df58
+targets=cli/ffmpeg,cli/ffprobe
+artifacts=results/bin/ffmpeg.com,results/bin/ffprobe.com
+ffmpeg_source=FFmpeg-n9.0.1.zip
+dav1d_dependency=1.5.4

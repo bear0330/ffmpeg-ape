@@ -1,0 +1,8 @@
+#!/bin/sh
+# Cosmocc's GCC backend does not support this Clang-only warning.  FFmpeg's
+# configure probe mistakes the wrapper for Clang and enables it globally.
+set -eu
+src=${1:?FFmpeg source directory required}
+shift
+sed -i '/^check_c_warning -Wunterminated-string-initialization$/d' "$src/configure"
+exec "$src/configure" "$@"
