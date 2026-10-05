@@ -1,0 +1,10 @@
+schema_version: 1
+ape:
+  name: ffmpeg-ape
+  binary: ffmpeg.com
+commands:
+  - path: []
+    summary: Run the bundled portable FFmpeg CLI with explicit arguments.
+    positionals: []
+    options: []
+operations: []

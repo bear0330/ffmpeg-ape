@@ -79,6 +79,57 @@ file/pipe input, selected common demuxers, codecs, muxers, filters, and AV1
 decoding through dav1d; networking and automatic host-library detection are
 disabled.
 
+## Python, Node, and Java bindings
+
+The `bindings/python`, `bindings/node`, and `bindings/java` packages bundle
+both portable executables. They are intentionally thin: FFmpeg's CLI remains
+the API, while APEBind supplies reliable subprocess launching, output capture,
+error handling, and portable package-data handling.
+
+```python
+from ffmpeg_ape import probe, run
+
+run('-i', 'input.wav', '-c:a', 'aac', 'output.mp4')
+info = probe('output.mp4')
+```
+
+```js
+import { probe, run } from 'ffmpeg-ape';
+
+await run('-i', 'input.wav', '-c:a', 'aac', 'output.mp4');
+const info = await probe('output.mp4');
+```
+
+```java
+import apebind.generated.ffmpeg_ape.FFmpeg;
+import java.nio.file.Path;
+
+FFmpeg.run("-i", "input.wav", "-c:a", "aac", "output.mp4");
+var info = FFmpeg.probe(Path.of("output.mp4"));
+```
+
+For arbitrary CLI arguments, use Python's `ffmpeg([...])` / `ffprobe([...])`,
+Node's corresponding functions, or Java's `FFmpeg.ffmpeg(List.of(...))` /
+`FFmpeg.ffprobe(List.of(...))`. They return the APEBind process result.
+`probe(path)` is only the JSON convenience helper for
+`-show_format -show_streams -of json`.
+
+[`ffmpeg.apebind.yaml`](ffmpeg.apebind.yaml) is the reviewed APEBind contract
+for the generated FFmpeg raw-argv runtime. Regenerate its base package from an
+available build output, then restore the small dual-binary convenience layer:
+
+```sh
+apebind validate ffmpeg.apebind.yaml
+apebind generate ffmpeg.apebind.yaml --ape /path/to/ffmpeg.com --lang python -o bindings/python
+apebind generate ffmpeg.apebind.yaml --ape /path/to/ffmpeg.com --lang node -o bindings/node
+apebind generate ffmpeg.apebind.yaml --ape /path/to/ffmpeg.com --lang java -o bindings/java
+```
+
+The additional `ffprobe.com` binary and `run`/`probe` helpers are deliberate
+package-local additions because one APEBind schema represents one executable.
+All three packages include the FFmpeg LGPL-2.1-or-later license text and
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
 ## Use
 
 ```sh

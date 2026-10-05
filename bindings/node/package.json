@@ -1,0 +1,17 @@
+{
+  "apebindGenerated": true,
+  "name": "ffmpeg-ape",
+  "version": "0.1.0",
+  "description": "Portable FFmpeg and FFprobe bundled for Node.js; no system FFmpeg required.",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "files": [
+    "src",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
